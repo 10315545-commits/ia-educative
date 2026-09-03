@@ -1,0 +1,551 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduIA — Aprende Pensando</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:linear-gradient(135deg,#101827,#182b49);
+    color:white;
+    min-height:100vh;
+}
+
+header{
+    text-align:center;
+    padding:25px 15px;
+    background:#0b1220;
+    border-bottom:2px solid #263b5c;
+}
+
+header h1{
+    font-size:35px;
+}
+
+header p{
+    margin-top:8px;
+    color:#aebbd0;
+}
+
+.container{
+    width:95%;
+    max-width:850px;
+    margin:30px auto;
+}
+
+.panel{
+    background:#16243a;
+    border-radius:18px;
+    padding:25px;
+    box-shadow:0 10px 35px rgba(0,0,0,.35);
+    margin-bottom:20px;
+}
+
+h2{
+    margin-bottom:15px;
+}
+
+select,
+input,
+button{
+    width:100%;
+    padding:13px;
+    border-radius:10px;
+    border:none;
+    font-size:16px;
+}
+
+select,
+input{
+    background:#0e1829;
+    color:white;
+    border:1px solid #304765;
+}
+
+button{
+    margin-top:10px;
+    background:#3478f6;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
+    transition:.2s;
+}
+
+button:hover{
+    transform:scale(1.02);
+    background:#4d8cff;
+}
+
+.secondary{
+    background:#263b5c;
+}
+
+.question{
+    font-size:23px;
+    line-height:1.5;
+    margin:15px 0 20px;
+}
+
+.message{
+    background:#0d1727;
+    border-left:4px solid #3478f6;
+    padding:15px;
+    border-radius:8px;
+    margin-top:15px;
+    line-height:1.5;
+}
+
+.correct{
+    border-left-color:#36d278;
+}
+
+.wrong{
+    border-left-color:#ff6969;
+}
+
+.stats{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:15px;
+}
+
+.stat{
+    flex:1;
+    background:#0e1829;
+    padding:12px;
+    border-radius:10px;
+    text-align:center;
+}
+
+.stat b{
+    display:block;
+    font-size:22px;
+    margin-top:5px;
+}
+
+.hidden{
+    display:none;
+}
+
+.badge{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:20px;
+    background:#263b5c;
+    margin-bottom:10px;
+    font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🤖 EduIA</h1>
+    <p>Aprende pensando, no copiando.</p>
+</header>
+
+<div class="container">
+
+    <div class="panel">
+        <h2>📚 Elige una materia</h2>
+
+        <select id="subject">
+            <option value="math">Matemáticas</option>
+            <option value="science">Ciencias</option>
+            <option value="history">Historia</option>
+            <option value="spanish">Español</option>
+        </select>
+
+        <button onclick="newQuestion()">
+            🎯 Comenzar
+        </button>
+    </div>
+
+
+    <div class="panel hidden" id="game">
+
+        <span class="badge" id="category">
+            Matemáticas
+        </span>
+
+        <div class="question" id="question">
+            Pregunta...
+        </div>
+
+        <input
+            id="answer"
+            placeholder="Escribe lo que piensas..."
+            autocomplete="off"
+        >
+
+        <button onclick="checkAnswer()">
+            🧠 Comprobar
+        </button>
+
+        <button class="secondary" onclick="getHint()">
+            💡 Necesito una pista
+        </button>
+
+        <button class="secondary" onclick="explain()">
+            📖 Explícame
+        </button>
+
+        <div id="feedback"></div>
+
+        <div class="stats">
+            <div class="stat">
+                Intentos
+                <b id="attempts">0</b>
+            </div>
+
+            <div class="stat">
+                Puntos
+                <b id="score">0</b>
+            </div>
+
+            <div class="stat">
+                Pistas
+                <b id="hints">0</b>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const questions = {
+
+    math:[
+        {
+            q:"¿Cuánto es 8 × 7?",
+            a:["56","cincuenta y seis"],
+            hints:[
+                "💡 Piensa en 8 grupos de 7.",
+                "🔎 Puedes resolverlo como 7 + 7 + 7 + 7 + 7 + 7 + 7 + 7.",
+                "🧩 Intenta sumar esos ocho grupos."
+            ],
+            explanation:"Multiplicar 8 × 7 significa sumar 7 ocho veces. El resultado es 56."
+        },
+
+        {
+            q:"Si tienes 25 monedas y gastas 9, ¿cuántas te quedan?",
+            a:["16","dieciseis","dieciséis"],
+            hints:[
+                "💡 Debes quitar una cantidad de otra.",
+                "🔎 Calcula 25 - 10.",
+                "🧩 Como quitaste una de más, vuelve a sumar 1."
+            ],
+            explanation:"25 - 9 = 16. Si tienes 25 y quitas 9, quedan 16."
+        },
+
+        {
+            q:"¿Cuánto es 12 + 15?",
+            a:["27","veintisiete"],
+            hints:[
+                "💡 Primero suma las decenas.",
+                "🔎 10 + 10 = 20.",
+                "🧩 Ahora suma 2 + 5 y junta ambos resultados."
+            ],
+            explanation:"12 + 15 = 27."
+        }
+    ],
+
+    science:[
+        {
+            q:"¿Qué planeta es conocido como el planeta rojo?",
+            a:["marte"],
+            hints:[
+                "💡 Es uno de los planetas vecinos de la Tierra.",
+                "🔎 Su nombre comienza con M.",
+                "🧩 Su superficie tiene mucho óxido de hierro."
+            ],
+            explanation:"El planeta rojo es Marte. Su apariencia rojiza se debe principalmente a minerales de hierro oxidados."
+        },
+
+        {
+            q:"¿Qué necesitan las plantas para realizar la fotosíntesis?",
+            a:["luz","luz solar","sol"],
+            hints:[
+                "💡 Piensa en algo que viene del Sol.",
+                "🔎 Las plantas capturan energía mediante sus hojas.",
+                "🧩 También intervienen agua y dióxido de carbono."
+            ],
+            explanation:"Las plantas necesitan principalmente luz, agua y dióxido de carbono para realizar la fotosíntesis."
+        }
+    ],
+
+    history:[
+        {
+            q:"¿En qué continente se encuentra Egipto?",
+            a:["africa","áfrica"],
+            hints:[
+                "💡 Egipto está cerca del desierto del Sahara.",
+                "🔎 El río Nilo atraviesa el país.",
+                "🧩 Piensa en el continente donde está el Sahara."
+            ],
+            explanation:"Egipto se encuentra principalmente en África, aunque la península del Sinaí está geográficamente en Asia."
+        },
+
+        {
+            q:"¿Cómo se llamaban los gobernantes del antiguo Egipto?",
+            a:["faraones","faraon","faraón"],
+            hints:[
+                "💡 Eran considerados gobernantes muy importantes.",
+                "🔎 Las pirámides y templos están relacionados con ellos.",
+                "🧩 La palabra comienza con F."
+            ],
+            explanation:"Los gobernantes del antiguo Egipto eran conocidos como faraones."
+        }
+    ],
+
+    spanish:[
+        {
+            q:"¿Cuál es el sustantivo en esta oración: 'El perro corre'?",
+            a:["perro","el perro"],
+            hints:[
+                "💡 Busca el nombre de una persona, animal, lugar o cosa.",
+                "🔎 No es la acción que realiza.",
+                "🧩 ¿Qué palabra nombra al animal?"
+            ],
+            explanation:"'Perro' es el sustantivo porque nombra al animal."
+        },
+
+        {
+            q:"¿Cuál es el verbo en: 'María estudia matemáticas'?",
+            a:["estudia"],
+            hints:[
+                "💡 Busca la acción.",
+                "🔎 ¿Qué está haciendo María?",
+                "🧩 Esa palabra indica lo que hace."
+            ],
+            explanation:"'Estudia' es el verbo porque expresa la acción que realiza María."
+        }
+    ]
+};
+
+
+let currentQuestion = null;
+let attempts = 0;
+let hintIndex = 0;
+let score = 0;
+let usedHints = 0;
+
+
+function newQuestion(){
+
+    const subject =
+        document.getElementById("subject").value;
+
+    const list = questions[subject];
+
+    currentQuestion =
+        list[Math.floor(Math.random()*list.length)];
+
+    attempts = 0;
+    hintIndex = 0;
+    usedHints = 0;
+
+    document.getElementById("game")
+        .classList.remove("hidden");
+
+    document.getElementById("question")
+        .textContent = currentQuestion.q;
+
+    document.getElementById("answer").value = "";
+
+    document.getElementById("feedback").innerHTML = "";
+
+    document.getElementById("attempts")
+        .textContent = attempts;
+
+    document.getElementById("hints")
+        .textContent = usedHints;
+
+    const names = {
+        math:"Matemáticas",
+        science:"Ciencias",
+        history:"Historia",
+        spanish:"Español"
+    };
+
+    document.getElementById("category")
+        .textContent = names[subject];
+
+    document.getElementById("answer").focus();
+}
+
+
+function normalize(text){
+
+    return text
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .trim();
+}
+
+
+function checkAnswer(){
+
+    if(!currentQuestion){
+        return;
+    }
+
+    const input =
+        normalize(document.getElementById("answer").value);
+
+    if(!input){
+        showMessage(
+            "🤔 Primero escribe lo que crees que es la respuesta.",
+            "message"
+        );
+        return;
+    }
+
+    attempts++;
+
+    document.getElementById("attempts")
+        .textContent = attempts;
+
+    const correct =
+        currentQuestion.a.some(
+            answer => normalize(answer) === input
+        );
+
+    if(correct){
+
+        let points = Math.max(
+            10 - (attempts-1)*2 - usedHints*2,
+            2
+        );
+
+        score += points;
+
+        document.getElementById("score")
+            .textContent = score;
+
+        showMessage(
+            `🎉 ¡Correcto! Ganaste ${points} puntos.<br>
+             No fue suerte: lo resolviste pensando.`,
+            "message correct"
+        );
+
+    }else{
+
+        let response;
+
+        if(attempts === 1){
+            response =
+                "❌ No es correcto todavía. No te diré la respuesta. Intenta pensar qué parte puedes revisar.";
+        }
+        else if(attempts === 2){
+            response =
+                "🤔 Aún no. Compara tu respuesta con la pregunta y busca una relación.";
+        }
+        else{
+            response =
+                "🧠 Sigue intentando. Si quieres ayuda, utiliza una pista.";
+        }
+
+        showMessage(response,"message wrong");
+    }
+}
+
+
+function getHint(){
+
+    if(!currentQuestion){
+        return;
+    }
+
+    if(hintIndex >= currentQuestion.hints.length){
+
+        showMessage(
+            "🔒 Ya utilizaste todas las pistas. Intenta resolverlo con lo que aprendiste.",
+            "message"
+        );
+
+        return;
+    }
+
+    const hint =
+        currentQuestion.hints[hintIndex];
+
+    hintIndex++;
+    usedHints++;
+
+    document.getElementById("hints")
+        .textContent = usedHints;
+
+    showMessage(
+        hint,
+        "message"
+    );
+}
+
+
+function explain(){
+
+    if(!currentQuestion){
+        return;
+    }
+
+    /*
+      EduIA NO muestra automáticamente la respuesta.
+      Solo explica el concepto y anima a intentarlo.
+    */
+
+    if(attempts < 2){
+
+        showMessage(
+            "📖 Primero intenta resolverlo al menos dos veces. La idea de EduIA es ayudarte a pensar antes de mostrarte la solución.",
+            "message"
+        );
+
+        return;
+    }
+
+    showMessage(
+        "📖 Explicación:<br><br>" +
+        currentQuestion.explanation +
+        "<br><br>Ahora intenta escribir la respuesta con tus propias palabras.",
+        "message"
+    );
+}
+
+
+function showMessage(text, className){
+
+    document.getElementById("feedback").innerHTML =
+        `<div class="${className}">${text}</div>`;
+}
+
+
+document.getElementById("answer")
+.addEventListener("keydown",function(event){
+
+    if(event.key === "Enter"){
+        checkAnswer();
+    }
+
+});
+
+</script>
+
+</body>
+</html>
+```
